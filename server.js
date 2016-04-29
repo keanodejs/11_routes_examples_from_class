@@ -32,16 +32,37 @@ app.get('/users', function(req, res) {
 
 // Rote to handle single user
 app.get('/users/:id', function(req, res) {
-    MongoClient.connect(url, function(err, db) {
 
-        var collection = db.collection('users');
+    if (req.params.id.length === 12 || req.params.id.length === 24) {
+        MongoClient.connect(url, function(err, db) {
 
-        collection.findOne({ '_id': ObjectId(req.params.id) }, function(err, data) {
+            if (err) {
+                res.status(500);
+                res.send({ "msg": "Internal Server Error" });
+                db.close();
+                return;
+            }
 
-            res.send(data);
-            db.close();
+            var collection = db.collection('users');
+
+            collection.findOne({ '_id': ObjectId(req.params.id) }, function(err, data) {
+
+                if (data === null) {
+                    res.status(404);
+                    res.send({ "msg": "User Not Found" });
+                } else {
+                    res.send(data);
+                }
+
+                db.close();
+            });
         });
-    });
+    } else {
+        res.status(400);
+        res.send({'msg' : '400 Bad Request'});
+    }
+
+
 });
 
 // Route that handles creation of new user
@@ -82,7 +103,7 @@ app.put('/users/:id', function(req, res) {
 
         var collection = db.collection('users');
 
-        collection.update({ '_id': ObjectID(req.params.id) }, {
+        collection.update({ '_id': ObjectId(req.params.id) }, {
             $set: req.body
         }, function(err, data) {
 
@@ -91,6 +112,11 @@ app.put('/users/:id', function(req, res) {
         });
     });
 });
+
+app.use(function(req, res) {
+    res.status(404);
+    res.send({ 'msg': 'Page Not Found' });
+})
 
 
 
